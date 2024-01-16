@@ -1,0 +1,13 @@
+to run local server:
+
+mvn exec:java -Dexec.mainClass="ca.uhn.fhir.letsbuild.server.RunServer"
+
+
+to run uploader :
+
+mvn exec:java -Dexec.mainClass="ca.uhn.fhir.letsbuild.upload.CsvDataUploader"
+
+to view content of jar:
+
+jar -tvf <jar-file>
+
