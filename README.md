@@ -89,3 +89,6 @@ The following things will work:
 * Searching for all Patient resources: http://localhost:8000/Patient
 * Searching for all Observation resources: http://localhost:8000/Observation
 * Searching for Observation resources by Subject: http://localhost:8000/Observation?subject=Patient/PT00002
+
+
+I added experimental support for transaction for the simple server. The idea is to allow users to "POST" a bundle of transaction type and do processing of resources inside the bundle

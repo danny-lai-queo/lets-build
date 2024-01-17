@@ -8,10 +8,13 @@ import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Enumerations;
 import org.hl7.fhir.r4.model.Observation;
+import org.hl7.fhir.r4.model.OperationOutcome;
 import org.hl7.fhir.r4.model.Patient;
 import org.hl7.fhir.r4.model.Resource;
 import org.hl7.fhir.r4.model.Bundle.BundleEntryComponent;
 import org.hl7.fhir.r4.model.Bundle.HTTPVerb;
+import org.hl7.fhir.r4.model.OperationOutcome.IssueSeverity;
+import org.hl7.fhir.r4.model.OperationOutcome.IssueType;
 import org.hl7.fhir.r4.model.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,35 +49,60 @@ public class BasicBundleProvider extends SimpleBundleProvider {
     }
 
     @Transaction
-    public Bundle transaction(@TransactionParam Bundle theInput) {
+    public Bundle transaction(@TransactionParam Bundle theInput
+    , RequestDetails theRequestDetails) {
+        ourLog.info("received bundle {}", theInput.getId());
+        ourLog.info("request detail : {}", theRequestDetails.getCompleteUrl());
+
         ArrayList<IBaseResource> resList = new ArrayList<IBaseResource>();
 
-        for (BundleEntryComponent ent : theInput.getEntry()) {
-            Resource res = ent.getResource();
-            ResourceType resType = res.getResourceType();
-            BundleEntryRequestComponent request = ent.getRequest();
-            
-
-            if (ent.getRequest().getMethod() != HTTPVerb.POST) {
-                ourLog.info("skipped {} {}", res.getId(), res.getResourceType());
-                continue;
-            }
-
-            if (resType == ResourceType.Patient) {
-                ourLog.info("found patient {} in bundle", res.getId());
-                resList.add(res);
-                patientProvider.update((Patient)res, "", null);
+        try {
+            for (BundleEntryComponent ent : theInput.getEntry()) {
+                Resource res = ent.getResource();
+                ResourceType resType = res.getResourceType();
+                BundleEntryRequestComponent request = ent.getRequest();
                 
-            } else if (resType == ResourceType.Observation) {
-                ourLog.info("found obs {} in bundle", res.getId());
-                resList.add(res);
-                observationProvider.update((Observation)res, "", null);
+
+                if (ent.getRequest().getMethod() != HTTPVerb.POST) {
+                    ourLog.info("skipped not POST bundle entry {} {}", res.getId(), res.getResourceType());
+                    continue;
+                }
+
+                if (resType == ResourceType.Patient) {
+                    ourLog.info("found patient {} in bundle", res.getId());
+                    resList.add(res);
+                    patientProvider.update((Patient)res, "", null);
+                    
+                } else if (resType == ResourceType.Observation) {
+                    ourLog.info("found obs {} in bundle", res.getId());
+                    resList.add(res);
+                    observationProvider.update((Observation)res, "", null);
+                }
             }
+            this.getAllResources().addAll(resList);
+            
+            Bundle retVal = new Bundle();
+            OperationOutcome outcome = new OperationOutcome();
+            outcome.addIssue().setSeverity(IssueSeverity.INFORMATION)
+                .setCode(IssueType.INFORMATIONAL).setDiagnostics("tx success");
+            
+            retVal.addEntry()
+                .setResource(outcome)
+                .getResponse()
+                .setStatus("200");
+            return retVal;
+        } catch (Exception e) {
+            Bundle retVal = new Bundle();
+            OperationOutcome outcome = new OperationOutcome();
+            outcome.addIssue().setSeverity(IssueSeverity.ERROR)
+                .setCode(IssueType.EXCEPTION).setDiagnostics(e.toString());
+            
+            retVal.addEntry()
+                .setResource(outcome)
+                .getResponse()
+                .setStatus("500");
+            return retVal;
         }
-        this.getAllResources().addAll(resList);
-        
-        Bundle retVal = new Bundle();
-        return retVal;
     }
 
     

@@ -11,10 +11,12 @@ import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.hl7.fhir.r4.model.Enumerations.AdministrativeGender;
 import org.hl7.fhir.r4.model.Observation.ObservationStatus;
+import org.hl7.fhir.r4.model.OperationOutcome;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.DateTimeType;
 import org.hl7.fhir.r4.model.DecimalType;
+import org.hl7.fhir.r4.model.DomainResource;
 import org.hl7.fhir.r4.model.HumanName;
 import org.hl7.fhir.r4.model.Observation;
 import org.hl7.fhir.r4.model.Patient;
@@ -201,12 +203,12 @@ public class CsvDataUploader {
 
         ourLog.info("capabilities {}", client.capabilities().toString());
 
-        for (Resource r : resList) {
-            ourLog.info("sending {} resource: id={}"
-                , r.getClass().getSimpleName(), r.getId());
+        // for (Resource r : resList) {
+        //     ourLog.info("sending {} resource: id={}"
+        //         , r.getClass().getSimpleName(), r.getId());
 
-            client.update().resource(r).execute();
-        }
+        //     client.update().resource(r).execute();
+        // }
 
         // for (IBaseResource r : resList) {
         //     Patient p;
@@ -222,9 +224,11 @@ public class CsvDataUploader {
         //     ourLog.info(">>> {}", item);
         // }
 
-        // Bundle response = client.transaction().withBundle(bundle).execute();
-        // ourLog.info(">>> {}", response);
-
+        Bundle response = client.transaction().withBundle(bundle).execute();
+        ourLog.info(">>> response status {}", response.getEntry().get(0).getResponse().getStatus());
+        Resource responseRes = response.getEntry().get(0).getResource();
+        OperationOutcome outcome = (OperationOutcome)responseRes;
+        ourLog.info(">>> diagnostic: {}", outcome.getIssue().get(0).getDiagnostics());
     } // main
 
     public static Observation CreateObservation(Patient patient,

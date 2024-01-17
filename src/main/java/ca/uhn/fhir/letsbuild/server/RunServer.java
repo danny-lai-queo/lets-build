@@ -34,11 +34,17 @@ public class RunServer {
 		// Create a HAPI FHIR RestfulServer with two in-memory resource providers
 		RestfulServer server = new RestfulServer(ourFhirContext);
 		server.setBundleInclusionRule(BundleInclusionRule.BASED_ON_RESOURCE_PRESENCE);
-		server.registerProvider(new HashMapResourceProvider<>(ourFhirContext, Patient.class));
-		server.registerProvider(new SearchableObservationHashMapResourceProvider(ourFhirContext));
+		// server.registerProvider(new HashMapResourceProvider<>(ourFhirContext, Patient.class));
+		// server.registerProvider(new SearchableObservationHashMapResourceProvider(ourFhirContext));
 
-		//BasicBundleProvider bpro = new BasicBundleProvider(ourFhirContext);
-		//server.registerProvider(bpro);
+		IResourceProvider patProvider = new HashMapResourceProvider<>(ourFhirContext, Patient.class);
+		server.registerProvider(patProvider);
+		IResourceProvider obsProvider = new SearchableObservationHashMapResourceProvider(ourFhirContext);
+		server.registerProvider(obsProvider);
+
+		BasicBundleProvider bpro = new BasicBundleProvider(ourFhirContext
+		, patProvider, obsProvider);
+		server.registerProvider(bpro);
 		
 		
 
