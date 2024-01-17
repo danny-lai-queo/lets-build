@@ -1,14 +1,22 @@
 package ca.uhn.fhir.letsbuild.server;
 
 import ca.uhn.fhir.context.FhirContext;
+import ca.uhn.fhir.context.api.BundleInclusionRule;
+import ca.uhn.fhir.rest.server.IResourceProvider;
 import ca.uhn.fhir.rest.server.RestfulServer;
 import ca.uhn.fhir.rest.server.interceptor.LoggingInterceptor;
 import ca.uhn.fhir.rest.server.interceptor.ResponseHighlighterInterceptor;
 import ca.uhn.fhir.rest.server.provider.HashMapResourceProvider;
 import ca.uhn.fhir.test.utilities.JettyUtil;
+
+import java.util.ArrayList;
+import java.util.TreeMap;
+
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.hl7.fhir.instance.model.api.IBaseResource;
+import org.hl7.fhir.r4.hapi.ctx.FhirServerR4;
 import org.hl7.fhir.r4.model.Patient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,8 +33,14 @@ public class RunServer {
 
 		// Create a HAPI FHIR RestfulServer with two in-memory resource providers
 		RestfulServer server = new RestfulServer(ourFhirContext);
+		server.setBundleInclusionRule(BundleInclusionRule.BASED_ON_RESOURCE_PRESENCE);
 		server.registerProvider(new HashMapResourceProvider<>(ourFhirContext, Patient.class));
 		server.registerProvider(new SearchableObservationHashMapResourceProvider(ourFhirContext));
+
+		//BasicBundleProvider bpro = new BasicBundleProvider(ourFhirContext);
+		//server.registerProvider(bpro);
+		
+		
 
 		// Register some helpful interceptors
 		server.registerInterceptor(new ResponseHighlighterInterceptor());

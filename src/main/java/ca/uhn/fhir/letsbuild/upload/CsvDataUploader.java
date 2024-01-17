@@ -3,6 +3,7 @@ package ca.uhn.fhir.letsbuild.upload;
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.IParser;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
+import ca.uhn.fhir.rest.client.interceptor.LoggingInterceptor;
 
 import com.google.common.base.Charsets;
 import org.apache.commons.csv.CSVFormat;
@@ -69,7 +70,7 @@ public class CsvDataUploader {
                 String patientId = nextRecord.get("PATIENT_ID");
 
                 // Add a log line - you can copy this to add more helpful logging
-                ourLog.info("Processing row with sequence {} for patient ID {}", seqN, patientId);
+                //ourLog.info("Processing row with sequence {} for patient ID {}", seqN, patientId);
 
                 // Patient Family Name
                 String patientFamilyName = nextRecord.get("PATIENT_FAMILYNAME");
@@ -158,7 +159,8 @@ public class CsvDataUploader {
                 // String patientJsonString = parser.encodeResourceToString(patient);
 
                 // System.out.printf("\n>> created patient resource: id=%s\n", patient.getId().toString());
-                ourLog.info("created patient resource: id={}", patient.getId());
+                // ourLog.info("created patient resource: id={}", patient.getId());
+                
                 // System.out.println(patientJsonString);
 
                 bundle.addEntry()
@@ -195,12 +197,30 @@ public class CsvDataUploader {
         // ourLog.info(bundleJson);
 
         IGenericClient client = ctx.newRestfulGenericClient("http://localhost:8000");
+        client.registerInterceptor(new LoggingInterceptor());
 
+        ourLog.info("capabilities {}", client.capabilities().toString());
 
-        List<IBaseResource> resps = client.transaction().withResources(resList).execute();
-        for (IBaseResource item : resps) {
-            ourLog.info(">>> {}", item);
+        for (Resource r : resList) {
+            ourLog.info("sending {} resource: id={}"
+                , r.getClass().getSimpleName(), r.getId());
+
+            client.update().resource(r).execute();
         }
+
+        // for (IBaseResource r : resList) {
+        //     Patient p;
+        //     try { p = (Patient)r; } catch (Exception e) { continue; }
+        //     ourLog.info("sending {} resource: id={}"
+        //         , p.getClass().getSimpleName(), p.getId());
+
+        //     client.update().resource(p).execute();
+        // }
+
+        // List<IBaseResource> resps = client.transaction().withResources(resList).execute();
+        // for (IBaseResource item : resps) {
+        //     ourLog.info(">>> {}", item);
+        // }
 
         // Bundle response = client.transaction().withBundle(bundle).execute();
         // ourLog.info(">>> {}", response);
